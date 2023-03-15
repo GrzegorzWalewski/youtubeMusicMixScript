@@ -1,9 +1,7 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-echo %username%
 set script_path=%~dp0
-echo The path of this script is %script_path%
 
 cd %script_path%
 
@@ -54,7 +52,7 @@ if not "!youtube_link!" == "" (
 )
 
 if "!youtube_link!" == "" (
-	set /p youtube_link="Podaj link do filmu na YouTube: "
+	set /p youtube_link="Insert youtube link: "
 
 	echo ID  Description
 	echo --------------------------
@@ -72,28 +70,28 @@ if "!youtube_link!" == "" (
 	)
 	echo --------------------------
 
-	set /p video_sample="Ktorego video uzyc?(1-21) "
-	set /p user_input="Podaj tytul dla finalnego pliku: "
+	set /p video_sample="Which sample use?(1-21) "
+	set /p user_input="Enter final file name: "
 	set "no_spaces=%user_input: =%"
 )
 
-echo Pobieranie audio z YouTube...
+echo Downloading from Youtube...
 youtube-dl --verbose --extract-audio --audio-format mp3 --output "%no_spaces%_audio.%%(ext)s" %youtube_link%
 
-echo Pobieranie informacji o czasie trwania pliku audio...
+echo Getting audio duration info...
 ffprobe -i %no_spaces%_audio.mp3 -show_entries format=duration -v quiet -of csv="p=0" > %no_spaces%_duration.tmp
 set /p duration=<%no_spaces%_duration.tmp
 del %no_spaces%_duration.tmp
 
 echo duration: %duration
 
-echo Tworzenie filmiku z audio...
+echo Creating video with audio...
 set /a duration_rounded=%duration%
 ffmpeg -stream_loop -1 -i "%script_path%samples\%video_sample%.mp4" -i %no_spaces%_audio.mp3 -t %duration% -map 0:v:0 -map 1:a:0 -c:v libx264 -c:a aac -b:a 192k -shortest -strict -2 -f mp4 -y %no_spaces%.mp4
 
 
 del "%no_spaces%_audio.mp3"
-echo "Plik %no_spaces%_audio.mp3 został usuniety"
+echo "File %no_spaces%_audio.mp3 has been removed"
 
-echo Zakonczono! Plik znajdziesz w folderze readyToUpload
+echo Finished! You will find Your final file in "%ready_to_upload_dir%\%no_spaces%.mp4"
 pause
