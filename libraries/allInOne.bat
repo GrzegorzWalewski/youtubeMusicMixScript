@@ -43,7 +43,7 @@ for /F "tokens=1,2,3 delims=&" %%a in ("%query%") do (
   set "video_sample=%%b"
   set "youtube_link=%%c"
 )
-set "no_spaces=%name: =%"
+set "no_spaces=a%name: =%"
 
 if not "!youtube_link!" == "" (
 	echo var1: %no_spaces%
