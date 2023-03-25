@@ -40,37 +40,20 @@ set "query=!uri:*?=!"
 
 for /F "tokens=1,2,3 delims=&" %%a in ("%query%") do (
   set "name=%%a"
-  set "video_sample=%%b"
+  set "image_query=%%b"
   set "youtube_link=%%c"
 )
 set "no_spaces=a%name: =%"
 
 if not "!youtube_link!" == "" (
 	echo var1: %no_spaces%
-	echo var2: %video_sample%
+	echo var2: %image_query%
 	echo var3: %youtube_link%
 )
 
 if "!youtube_link!" == "" (
 	set /p youtube_link="Insert youtube link: "
-
-	echo ID  Description
-	echo --------------------------
-	setlocal enabledelayedexpansion
-	set /a i=0
-	for %%d in ("motivation,training,outdoor" "car,drift,phonk" "DJ,disco,techno" "DJ,techno,mixer" "city in night,mood" "party,people dancing" "DJ,mixer,people dancing in background" "endless loop" "fireplace,dark,mood aesthetic" "disco ball,girl standing and moving it" "endless rain loop" "pomp up,training,gym" "drift,car" "dancing,flowers,girl" "flowers,aesthetic,old film" "dark,red,girl standing,slow cam" "sad,dark,slow cam" "party,one person dancing" "party,people's faces,pills" "gaming" "gaming keyboard") do (
-	    set /a i+=1
-	    set "desc=%%d"
-	    set "desc=!desc:,= | !"
-		if !i! leq 9 (
-			echo !i!  #  !desc!
-		) else (
-			echo !i! #  !desc!
-		)
-	)
-	echo --------------------------
-
-	set /p video_sample="Which sample use?(1-21) "
+	set /p image_query="Enter image query(for multiple words use ',' semicol): "
 	set /p user_input="Enter final file name: "
 	set "no_spaces=%user_input: =%"
 )
@@ -78,20 +61,17 @@ if "!youtube_link!" == "" (
 echo Downloading from Youtube...
 youtube-dl --verbose --extract-audio --audio-format mp3 --output "%no_spaces%_audio.%%(ext)s" %youtube_link%
 
-echo Getting audio duration info...
-ffprobe -i %no_spaces%_audio.mp3 -show_entries format=duration -v quiet -of csv="p=0" > %no_spaces%_duration.tmp
-set /p duration=<%no_spaces%_duration.tmp
-del %no_spaces%_duration.tmp
-
-echo duration: %duration
+echo Downloading image
+ffmpeg -i https://source.unsplash.com/random/1920x1080?%image_query% -frames:v 1 -update 1 %no_spaces%_image.jpg
 
 echo Creating video with audio...
-set /a duration_rounded=%duration%
-ffmpeg -stream_loop -1 -i "%script_path%samples\%video_sample%.mp4" -i %no_spaces%_audio.mp3 -t %duration% -map 0:v:0 -map 1:a:0 -c:v libx264 -c:a aac -b:a 192k -shortest -strict -2 -f mp4 -y %no_spaces%.mp4
-
+ffmpeg -i %no_spaces%_audio.mp3 -loop 1 -framerate 30 -i %no_spaces%_image.jpg -filter_complex "[0:a]aformat=channel_layouts=mono,showwaves=size=1920x500:mode=cline:rate=30:colors=white[v];[1:v][v]overlay=format=auto:x=(W-w)/2:y=H-h/2,format=yuv420p[outv]" -map "[outv]" -map 0:a -c:v libx265 -preset superfast -c:a copy -shortest %no_spaces%.mp4
 
 del "%no_spaces%_audio.mp3"
 echo "File %no_spaces%_audio.mp3 has been removed"
+
+del "%no_spaces%_image.jpg"
+echo "File %no_spaces%_image.jpg has been removed"
 
 echo Finished! You will find Your final file in "%ready_to_upload_dir%\%no_spaces%.mp4"
 pause
